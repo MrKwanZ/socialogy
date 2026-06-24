@@ -1,0 +1,6 @@
+.logo {
+  display: block;
+  height: 2.5rem;
+  width: auto;
+  object-fit: contain;
+}

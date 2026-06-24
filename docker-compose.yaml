@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./social-network-app-backend
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./social-network-app-backend/images:/app/images
+    env_file:
+      - ./social-network-app-backend/.env
+    depends_on:
+      - mongo
+  frontend:
+    build:
+      context: ./social-network-app-frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./social-network-app-frontend/images:/app/images
+    env_file:
+      - ./social-network-app-frontend/.env
+    depends_on:
+      - backend
+  mongo:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./social-network-app-backend/data:/data/db
