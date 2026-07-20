@@ -5,9 +5,13 @@ import { BrowserRouter } from 'react-router-dom';
 import './index.css';
 import App from './App';
 
-const root = createRoot(document.getElementById('root'));
+const rootElement = document.getElementById('root');
 
-root.render(
+if (!rootElement) {
+  throw new Error('Root element not found');
+}
+
+createRoot(rootElement).render(
   <StrictMode>
     <BrowserRouter>
       <App />

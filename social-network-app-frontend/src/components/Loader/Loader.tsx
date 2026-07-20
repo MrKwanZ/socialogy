@@ -1,8 +1,6 @@
-import React from 'react';
-
 import './Loader.css';
 
-const loader = props => (
+const Loader = () => (
   <div className="loader">
     <div />
     <div />
@@ -11,4 +9,4 @@ const loader = props => (
   </div>
 );
 
-export default loader;
+export default Loader;

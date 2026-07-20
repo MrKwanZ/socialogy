@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, type FormEvent } from 'react';
 import { Route, Routes, Navigate, useNavigate } from 'react-router-dom';
 
 import Layout from './components/Layout/Layout';
@@ -11,19 +11,23 @@ import FeedPage from './pages/Feed/Feed';
 import SinglePostPage from './pages/Feed/SinglePost/SinglePost';
 import LoginPage from './pages/Auth/Login';
 import SignupPage from './pages/Auth/Signup';
+import { graphqlFetch } from './util/graphql';
+import { getGraphqlErrorMessage } from './util/graphqlErrors';
+import type { AuthData } from './types/graphql';
+import type { LoginCredentials, SignupFormPayload } from './types/form';
 import './App.css';
 
 const App = () => {
   const navigate = useNavigate();
-  const logoutTimerRef = useRef(null);
+  const logoutTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [showBackdrop, setShowBackdrop] = useState(false);
   const [showMobileNav, setShowMobileNav] = useState(false);
   const [isAuth, setIsAuth] = useState(false);
-  const [token, setToken] = useState(null);
-  const [userId, setUserId] = useState(null);
+  const [token, setToken] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
   const [authLoading, setAuthLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<Error | null>(null);
 
   const logoutHandler = useCallback(() => {
     setIsAuth(false);
@@ -39,7 +43,7 @@ const App = () => {
   }, []);
 
   const setAutoLogout = useCallback(
-    milliseconds => {
+    (milliseconds: number) => {
       if (logoutTimerRef.current) {
         clearTimeout(logoutTimerRef.current);
       }
@@ -75,7 +79,7 @@ const App = () => {
     };
   }, [logoutHandler, setAutoLogout]);
 
-  const mobileNavHandler = isOpen => {
+  const mobileNavHandler = (isOpen: boolean) => {
     setShowMobileNav(isOpen);
     setShowBackdrop(isOpen);
   };
@@ -86,49 +90,34 @@ const App = () => {
     setError(null);
   };
 
-  const loginHandler = (event, authData) => {
+  const loginHandler = (event: FormEvent, authData: LoginCredentials) => {
     event.preventDefault();
-    const graphqlQuery = {
-      query: `
-        query UserLogin($email: String!, $password: String!) {
-          login(email: $email, password: $password) {
-            token
-            userId
-          }
+
+    setAuthLoading(true);
+    graphqlFetch<{ login: AuthData }>(
+      `query UserLogin($email: String!, $password: String!) {
+        login(email: $email, password: $password) {
+          token
+          userId
         }
-      `,
-      variables: {
+      }`,
+      {
         email: authData.email,
         password: authData.password
       }
-    };
-    setAuthLoading(true);
-    fetch('http://localhost:8080/graphql', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(graphqlQuery)
-    })
-      .then(res => {
-        return res.json();
-      })
-      .then(resData => {
-        if (resData.errors && resData.errors[0].status === 422) {
-          throw new Error(
-            "Validation failed. Make sure the email address isn't used yet!"
-          );
-        }
+    )
+      .then((resData) => {
         if (resData.errors) {
-          throw new Error('User login failed!');
+          throw new Error(getGraphqlErrorMessage(resData.errors, 'login'));
         }
-        console.log(resData);
+
+        const loginData = resData.data!.login;
         setIsAuth(true);
-        setToken(resData.data.login.token);
+        setToken(loginData.token);
         setAuthLoading(false);
-        setUserId(resData.data.login.userId);
-        localStorage.setItem('token', resData.data.login.token);
-        localStorage.setItem('userId', resData.data.login.userId);
+        setUserId(loginData.userId);
+        localStorage.setItem('token', loginData.token);
+        localStorage.setItem('userId', loginData.userId);
         const remainingMilliseconds = 60 * 60 * 1000;
         const newExpiryDate = new Date(
           new Date().getTime() + remainingMilliseconds
@@ -136,7 +125,7 @@ const App = () => {
         localStorage.setItem('expiryDate', newExpiryDate.toISOString());
         setAutoLogout(remainingMilliseconds);
       })
-      .catch(err => {
+      .catch((err: Error) => {
         console.log(err);
         setIsAuth(false);
         setAuthLoading(false);
@@ -144,49 +133,33 @@ const App = () => {
       });
   };
 
-  const signupHandler = (event, authData) => {
+  const signupHandler = (event: FormEvent, authData: SignupFormPayload) => {
     event.preventDefault();
     setAuthLoading(true);
-    const graphqlQuery = {
-      query: `
-        mutation CreateNewUser($email: String!, $name: String!, $password: String!) {
-          createUser(userInput: {email: $email, name: $name, password: $password}) {
-            _id
-            email
-          }
+
+    graphqlFetch(
+      `mutation CreateNewUser($email: String!, $name: String!, $password: String!) {
+        createUser(userInput: {email: $email, name: $name, password: $password}) {
+          _id
+          email
         }
-      `,
-      variables: {
+      }`,
+      {
         email: authData.signupForm.email.value,
         name: authData.signupForm.name.value,
         password: authData.signupForm.password.value
       }
-    };
-    fetch('http://localhost:8080/graphql', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(graphqlQuery)
-    })
-      .then(res => {
-        return res.json();
-      })
-      .then(resData => {
-        if (resData.errors && resData.errors[0].status === 422) {
-          throw new Error(
-            "Validation failed. Make sure the email address isn't used yet!"
-          );
-        }
+    )
+      .then((resData) => {
         if (resData.errors) {
-          throw new Error('User creation failed!');
+          throw new Error(getGraphqlErrorMessage(resData.errors, 'signup'));
         }
-        console.log(resData);
+
         setIsAuth(false);
         setAuthLoading(false);
         navigate('/', { replace: true });
       })
-      .catch(err => {
+      .catch((err: Error) => {
         console.log(err);
         setIsAuth(false);
         setAuthLoading(false);
@@ -202,15 +175,11 @@ const App = () => {
     <Routes>
       <Route
         path="/"
-        element={
-          <LoginPage onLogin={loginHandler} loading={authLoading} />
-        }
+        element={<LoginPage onLogin={loginHandler} loading={authLoading} />}
       />
       <Route
         path="/signup"
-        element={
-          <SignupPage onSignup={signupHandler} loading={authLoading} />
-        }
+        element={<SignupPage onSignup={signupHandler} loading={authLoading} />}
       />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
@@ -219,14 +188,8 @@ const App = () => {
   if (isAuth) {
     routes = (
       <Routes>
-        <Route
-          path="/"
-          element={<FeedPage userId={userId} token={token} />}
-        />
-        <Route
-          path="/:postId"
-          element={<SinglePostPage token={token} />}
-        />
+        <Route path="/" element={<FeedPage userId={userId} token={token} />} />
+        <Route path="/:postId" element={<SinglePostPage token={token} />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     );
@@ -234,7 +197,9 @@ const App = () => {
 
   return (
     <>
-      {showBackdrop && <Backdrop onClick={backdropClickHandler} />}
+      {showBackdrop && (
+        <Backdrop open={showBackdrop} onClick={backdropClickHandler} />
+      )}
       <ErrorHandler error={error} onHandle={errorHandler} />
       <Layout
         header={
