@@ -1,6 +1,6 @@
-const { buildSchema } = require('graphql');
+import { buildSchema, GraphQLSchema } from 'graphql';
 
-module.exports = buildSchema(`
+const schema = buildSchema(`
     type Post {
         _id: ID!
         title: String!
@@ -62,3 +62,5 @@ module.exports = buildSchema(`
         mutation: RootMutation
     }
 `);
+
+export = schema as GraphQLSchema;

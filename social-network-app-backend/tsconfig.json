@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "outDir": "./dist",
+    "rootDir": ".",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "allowJs": true,
+    "sourceMap": true,
+    "declaration": true,
+    "declarationMap": true,
+    "typeRoots": ["./node_modules/@types", "./types"]
+  },
+  "include": [
+    "app.ts",
+    "graphql/**/*.ts",
+    "middleware/**/*.ts",
+    "models/**/*.ts",
+    "util/**/*.ts",
+    "types/**/*.ts"
+  ],
+  "exclude": ["node_modules", "dist", "tests", "controllers"]
+}
