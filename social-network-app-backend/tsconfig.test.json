@@ -13,5 +13,5 @@
     "types/**/*.ts",
     "tests/**/*.ts"
   ],
-  "exclude": ["node_modules", "dist", "controllers"]
+  "exclude": ["node_modules", "dist"]
 }

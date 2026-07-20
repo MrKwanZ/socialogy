@@ -1,14 +1,15 @@
 # Social Network App — Backend
 
-A Node.js/Express API for a social network platform. It provides GraphQL endpoints for authentication, posts, and user status, plus a REST endpoint for image uploads. Data is stored in MongoDB via Mongoose.
+A Node.js/Express API for a social network platform, written in **TypeScript**. It provides GraphQL endpoints for authentication, posts, and user status, plus a REST endpoint for image uploads. Data is stored in MongoDB via Mongoose.
 
 ## Tech Stack
 
 | Technology | Version |
 |------------|---------|
-| Node.js | 18+ (24 LTS recommended) |
+| Node.js | 18+ (20 LTS recommended) |
+| TypeScript | 5.x (strict mode) |
 | Express | 4.x |
-| GraphQL | 15.x (`express-graphql`) |
+| GraphQL | 15.x (`graphql-http`) |
 | Mongoose | 8.x |
 | MongoDB | Atlas or local |
 | JWT | `jsonwebtoken` |
@@ -17,11 +18,12 @@ A Node.js/Express API for a social network platform. It provides GraphQL endpoin
 
 - User signup and login (JWT, 1-hour expiry)
 - CRUD operations for posts (create, read, update, delete)
+- Author-only post update and delete (enforced in resolvers)
 - Paginated post feed (2 posts per page)
 - User status updates
 - Image upload for post attachments (`PUT /post-image`)
 - CORS enabled for cross-origin frontend requests
-- Integration test suite (Jest + Supertest)
+- Integration test suite (Jest + Supertest, 36 tests)
 
 ## IMPORTANT
 
@@ -29,7 +31,7 @@ A Node.js/Express API for a social network platform. It provides GraphQL endpoin
 
 You must also set up and run the companion frontend repository (`social-network-app-frontend`) to use the full social network app. The frontend connects to this API at `http://localhost:8080` for GraphQL and image uploads.
 
-Without the frontend, you can still use GraphiQL at `http://localhost:8080/graphql` for manual API testing, but there is no user-facing UI.
+Without the frontend, you can still send GraphQL requests to `http://localhost:8080/graphql` for manual API testing, but there is no user-facing UI.
 
 Clone or place both projects side by side, for example:
 
@@ -41,28 +43,19 @@ MERN/
 
 ## Prerequisites
 
-- [Node.js](https://nodejs.org/) 18+ (24 LTS recommended)
+- [Node.js](https://nodejs.org/) 18+ (20 LTS recommended)
 - npm
 - [MongoDB Atlas](https://www.mongodb.com/atlas) cluster (or local MongoDB instance)
 
 ## Setup
 
-1. **Clone the repository**
-
-   ```bash
-   git clone <backend-repo-url>
-   cd social-network-app-backend
-   ```
-
-2. **Install dependencies**
+1. **Install dependencies**
 
    ```bash
    npm install
    ```
 
-3. **Configure environment variables**
-
-   Copy the example file and fill in your values:
+2. **Configure environment variables**
 
    ```bash
    cp .env.example .env
@@ -74,15 +67,15 @@ MERN/
    | `JWT_SECRET` | Secret key for signing JWT tokens |
    | `PORT` | Server port (default: `8080`) |
 
-4. **Start the server**
+3. **Start the development server**
 
    ```bash
-   npm start
+   npm run dev
    ```
 
    You should see: `Server running on port 8080`
 
-5. **Start the frontend** (in a separate terminal)
+4. **Start the frontend** (in a separate terminal)
 
    From `social-network-app-frontend`:
 
@@ -97,7 +90,10 @@ MERN/
 
 | Command | Description |
 |---------|-------------|
-| `npm start` | Start server with nodemon (auto-reload) |
+| `npm run dev` | Start dev server with nodemon + tsx (auto-reload) |
+| `npm start` | Run compiled production build (`node dist/app.js`) |
+| `npm run build` | Compile TypeScript to `dist/` |
+| `npm run type-check` | Type-check application and test files |
 | `npm test` | Run integration tests (in-memory MongoDB) |
 
 ## API Endpoints
@@ -113,8 +109,6 @@ MERN/
 **Queries:** `login`, `posts`, `post`, `user`  
 **Mutations:** `createUser`, `createPost`, `updatePost`, `deletePost`, `updateStatus`
 
-GraphiQL is available at [http://localhost:8080/graphql](http://localhost:8080/graphql) when the server is running.
-
 Authenticated requests must include:
 
 ```
@@ -125,20 +119,30 @@ Authorization: Bearer <token>
 
 ```
 social-network-app-backend/
-├── app.js                 # Express app, MongoDB connect, routes
+├── app.ts                 # Express app, MongoDB connect, routes
 ├── graphql/
-│   ├── schema.js          # GraphQL schema
-│   └── resolvers.js       # GraphQL resolvers
+│   ├── schema.ts          # GraphQL schema (SDL)
+│   └── resolvers.ts       # GraphQL resolvers
 ├── middleware/
-│   └── auth.js            # JWT authentication
+│   └── auth.ts            # JWT authentication
 ├── models/
-│   ├── post.js
-│   └── user.js
-├── controllers/           # Legacy REST controllers (unused)
+│   ├── post.ts
+│   └── user.ts
 ├── util/
-│   └── file.js            # Image cleanup helper
+│   ├── file.ts            # Image cleanup helper
+│   ├── mappers.ts         # Mongoose → GraphQL mappers
+│   └── paths.ts           # Path helpers for dist/ runtime
+├── types/
+│   ├── errors.ts          # AppError class
+│   ├── express.d.ts       # Express Request augmentation
+│   ├── graphql.ts         # GraphQL response types
+│   ├── global.d.ts        # Test global augmentation
+│   └── models.ts          # Mongoose document interfaces
 ├── tests/                 # Jest integration tests
 ├── images/                # Uploaded images (gitignored)
+├── tsconfig.json
+├── tsconfig.test.json
+├── jest.config.js
 └── .env                   # Environment variables (gitignored)
 ```
 
@@ -149,6 +153,15 @@ Tests use an in-memory MongoDB instance — no Atlas connection required.
 ```bash
 npm test
 ```
+
+Test suites cover auth (`createUser`, `login`) and post CRUD (`createPost`, `updatePost`, `deletePost`, `posts` pagination).
+
+## Docker
+
+The Dockerfile uses a multi-stage build:
+
+1. **Builder** — `npm ci` + `npm run build` (compiles to `dist/`)
+2. **Runtime** — production dependencies only, runs `node dist/app.js`
 
 ## License
 

@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   backend:
     build:
@@ -13,18 +11,19 @@ services:
       - ./social-network-app-backend/.env
     depends_on:
       - mongo
+
   frontend:
     build:
       context: ./social-network-app-frontend
       dockerfile: Dockerfile
+      target: development
     ports:
       - "3000:3000"
-    volumes:
-      - ./social-network-app-frontend/images:/app/images
     env_file:
       - ./social-network-app-frontend/.env
     depends_on:
       - backend
+
   mongo:
     image: mongo:latest
     ports:

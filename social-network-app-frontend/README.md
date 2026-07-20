@@ -1,6 +1,6 @@
 # Social Network App — Frontend
 
-A React single-page application for a social network platform. Users can sign up, log in, manage their status, and create, view, edit, and delete posts with image uploads. The UI talks to a GraphQL backend over HTTP.
+A React single-page application for a social network platform, written in **TypeScript**. Users can sign up, log in, manage their status, and create, view, edit, and delete posts with image uploads. The UI talks to a GraphQL backend over HTTP.
 
 ## Tech Stack
 
@@ -9,7 +9,7 @@ A React single-page application for a social network platform. Users can sign up
 | React | 19.x |
 | React Router | 7.x |
 | Vite | 6.x |
-| JavaScript (JSX) | ES modules |
+| TypeScript | 5.x (strict mode) |
 
 ## Features
 
@@ -17,8 +17,10 @@ A React single-page application for a social network platform. Users can sign up
 - Protected routes for authenticated users
 - Feed with paginated posts
 - Create, edit, and delete posts with image upload
+- Edit/delete controls visible only to the post author
 - Single post detail view
 - User status updates
+- Blur-based form validation with inline error messages
 - Responsive layout with mobile navigation
 
 ## IMPORTANT
@@ -42,43 +44,36 @@ MERN/
 
 ## Prerequisites
 
-- [Node.js](https://nodejs.org/) 18+ (24 LTS recommended)
+- [Node.js](https://nodejs.org/) 18+ (20 LTS recommended)
 - npm
 - Running backend server on port **8080** (see backend README / setup)
 
 ## Setup
 
-1. **Clone the repository**
-
-   ```bash
-   git clone <frontend-repo-url>
-   cd social-network-app-frontend
-   ```
-
-2. **Install dependencies**
+1. **Install dependencies**
 
    ```bash
    npm install
    ```
 
-3. **Start the backend first**
+2. **Start the backend first**
 
    In a separate terminal, from `social-network-app-backend`:
 
    ```bash
    npm install
-   npm start
+   npm run dev
    ```
 
    Confirm the backend is listening on `http://localhost:8080`.
 
-4. **Start the frontend**
+3. **Start the frontend**
 
    ```bash
    npm run dev
    ```
 
-5. **Open the app**
+4. **Open the app**
 
    Visit [http://localhost:3000](http://localhost:3000) in your browser.
 
@@ -89,29 +84,51 @@ MERN/
 | `npm run dev` | Start Vite dev server (port 3000) |
 | `npm run build` | Production build → `dist/` |
 | `npm run preview` | Preview the production build locally |
+| `npm run type-check` | Type-check with `tsc -b` |
 
 ## Project Structure
 
 ```
 social-network-app-frontend/
-├── public/              # Static assets (logo, manifest)
+├── public/              # Static assets (manifest)
 ├── src/
 │   ├── components/      # Reusable UI (Button, Modal, Navigation, etc.)
 │   ├── pages/           # Route pages (Auth, Feed, SinglePost)
-│   ├── util/            # Validators and image helpers
-│   ├── App.jsx          # Root app, auth state, routing
-│   └── index.jsx        # Entry point
+│   ├── types/           # GraphQL and form TypeScript types
+│   ├── util/            # graphql, validators, formValidation, image
+│   ├── App.tsx          # Root app, auth state, routing
+│   └── index.tsx        # Entry point
 ├── index.html           # Vite HTML template
-└── vite.config.js       # Vite configuration
+├── vite.config.ts       # Vite configuration
+├── tsconfig.json        # Project references root
+├── tsconfig.app.json    # App source type-check config
+└── tsconfig.node.json   # Vite config type-check
 ```
 
 ## API Configuration
 
-API URLs are currently hardcoded to `http://localhost:8080`. If your backend runs on a different host or port, update the `fetch` calls in:
+The backend URL is defined in `src/util/graphql.ts`:
 
-- `src/App.jsx`
-- `src/pages/Feed/Feed.jsx`
-- `src/pages/Feed/SinglePost/SinglePost.jsx`
+```typescript
+export const API_URL = 'http://localhost:8080';
+```
+
+If your backend runs on a different host or port, update `API_URL` there. All GraphQL calls go through the shared `graphqlFetch()` helper in the same file.
+
+## Docker
+
+The Dockerfile provides two build targets:
+
+| Target | Purpose |
+|--------|---------|
+| `development` (default in `docker-compose`) | Vite dev server with hot reload on port 3000 |
+| `production` | Static build served by nginx on port 80 |
+
+Build the production image:
+
+```bash
+docker build --target production -t socialogy-frontend .
+```
 
 ## License
 
