@@ -1,26 +1,28 @@
-const request = require('supertest');
-const {
+import request from 'supertest';
+import {
   app,
   graphqlRequest,
   signupAndLogin,
   createPost,
   createTokenForMissingUser,
   minimalJpegBuffer
-} = require('./helpers');
+} from './helpers';
+import { GraphqlResponse } from './types';
 
 describe('Feed CRUD', () => {
-  let token;
-  let userId;
-  let postId;
+  let token: string;
+  let postId: string;
 
   beforeEach(async () => {
     const auth = await signupAndLogin();
     token = auth.token;
-    userId = auth.userId;
 
     const postRes = await createPost(token);
-    expect(postRes.body.errors).toBeUndefined();
-    postId = postRes.body.data.createPost._id;
+    const postBody = postRes.body as GraphqlResponse<{
+      createPost: { _id: string };
+    }>;
+    expect(postBody.errors).toBeUndefined();
+    postId = postBody.data!.createPost._id;
   });
 
   describe('createPost', () => {
@@ -29,36 +31,45 @@ describe('Feed CRUD', () => {
         title: 'Another Post',
         content: 'More content here'
       });
+      const body = res.body as GraphqlResponse<{
+        createPost: { title: string; content: string };
+      }>;
 
-      expect(res.body.errors).toBeUndefined();
-      expect(res.body.data.createPost.title).toBe('Another Post');
-      expect(res.body.data.createPost.content).toBe('More content here');
+      expect(body.errors).toBeUndefined();
+      expect(body.data?.createPost.title).toBe('Another Post');
+      expect(body.data?.createPost.content).toBe('More content here');
     });
 
     it('returns 401 when not authenticated', async () => {
       const res = await createPost(null);
+      const body = res.body as GraphqlResponse;
 
-      expect(res.body.errors).toBeDefined();
-      expect(res.body.errors[0].message).toBe('Not authenticated!');
-      expect(res.body.errors[0].status).toBe(401);
+      expect(body.errors).toBeDefined();
+      expect(body.errors?.[0].message).toBe('Not authenticated!');
+      expect(body.errors?.[0].status).toBe(401);
     });
 
     it('returns 401 when user does not exist', async () => {
       const fakeToken = await createTokenForMissingUser();
       const res = await createPost(fakeToken);
+      const body = res.body as GraphqlResponse;
 
-      expect(res.body.errors).toBeDefined();
-      expect(res.body.errors[0].message).toBe('Invalid user.');
-      expect(res.body.errors[0].status).toBe(401);
+      expect(body.errors).toBeDefined();
+      expect(body.errors?.[0].message).toBe('Invalid user.');
+      expect(body.errors?.[0].status).toBe(401);
     });
 
     it('returns 422 when title is invalid', async () => {
-      const res = await createPost(token, { title: 'bad', content: 'valid content' });
+      const res = await createPost(token, {
+        title: 'bad',
+        content: 'valid content'
+      });
+      const body = res.body as GraphqlResponse;
 
-      expect(res.body.errors).toBeDefined();
-      expect(res.body.errors[0].message).toBe('Invalid input.');
-      expect(res.body.errors[0].status).toBe(422);
-      expect(res.body.errors[0].data).toEqual(
+      expect(body.errors).toBeDefined();
+      expect(body.errors?.[0].message).toBe('Invalid input.');
+      expect(body.errors?.[0].status).toBe(422);
+      expect(body.errors?.[0].data).toEqual(
         expect.arrayContaining([{ message: 'Title is invalid.' }])
       );
     });
@@ -68,11 +79,12 @@ describe('Feed CRUD', () => {
         title: 'Valid Title',
         content: 'bad'
       });
+      const body = res.body as GraphqlResponse;
 
-      expect(res.body.errors).toBeDefined();
-      expect(res.body.errors[0].message).toBe('Invalid input.');
-      expect(res.body.errors[0].status).toBe(422);
-      expect(res.body.errors[0].data).toEqual(
+      expect(body.errors).toBeDefined();
+      expect(body.errors?.[0].message).toBe('Invalid input.');
+      expect(body.errors?.[0].status).toBe(422);
+      expect(body.errors?.[0].data).toEqual(
         expect.arrayContaining([{ message: 'Content is invalid.' }])
       );
     });
@@ -80,8 +92,14 @@ describe('Feed CRUD', () => {
 
   describe('posts query with pagination', () => {
     it('returns paginated posts', async () => {
-      await createPost(token, { title: 'Second Post', content: 'Second content' });
-      await createPost(token, { title: 'Third Post', content: 'Third content' });
+      await createPost(token, {
+        title: 'Second Post',
+        content: 'Second content'
+      });
+      await createPost(token, {
+        title: 'Third Post',
+        content: 'Third content'
+      });
 
       const pageOne = await graphqlRequest(
         `query FetchPosts($page: Int) {
@@ -93,10 +111,13 @@ describe('Feed CRUD', () => {
         { page: 1 },
         token
       );
+      const pageOneBody = pageOne.body as GraphqlResponse<{
+        posts: { posts: unknown[]; totalPosts: number };
+      }>;
 
-      expect(pageOne.body.errors).toBeUndefined();
-      expect(pageOne.body.data.posts.posts).toHaveLength(2);
-      expect(pageOne.body.data.posts.totalPosts).toBe(3);
+      expect(pageOneBody.errors).toBeUndefined();
+      expect(pageOneBody.data?.posts.posts).toHaveLength(2);
+      expect(pageOneBody.data?.posts.totalPosts).toBe(3);
 
       const pageTwo = await graphqlRequest(
         `query FetchPosts($page: Int) {
@@ -108,9 +129,12 @@ describe('Feed CRUD', () => {
         { page: 2 },
         token
       );
+      const pageTwoBody = pageTwo.body as GraphqlResponse<{
+        posts: { posts: unknown[] };
+      }>;
 
-      expect(pageTwo.body.errors).toBeUndefined();
-      expect(pageTwo.body.data.posts.posts).toHaveLength(1);
+      expect(pageTwoBody.errors).toBeUndefined();
+      expect(pageTwoBody.data?.posts.posts).toHaveLength(1);
     });
 
     it('returns 401 when not authenticated', async () => {
@@ -120,10 +144,11 @@ describe('Feed CRUD', () => {
           totalPosts
         }
       }`);
+      const body = res.body as GraphqlResponse;
 
-      expect(res.body.errors).toBeDefined();
-      expect(res.body.errors[0].message).toBe('Not authenticated!');
-      expect(res.body.errors[0].status).toBe(401);
+      expect(body.errors).toBeDefined();
+      expect(body.errors?.[0].message).toBe('Not authenticated!');
+      expect(body.errors?.[0].status).toBe(401);
     });
   });
 
@@ -141,11 +166,14 @@ describe('Feed CRUD', () => {
         { id: postId },
         token
       );
+      const body = res.body as GraphqlResponse<{
+        post: { _id: string; title: string; creator: { name: string } };
+      }>;
 
-      expect(res.body.errors).toBeUndefined();
-      expect(res.body.data.post._id).toBe(postId);
-      expect(res.body.data.post.title).toBe('Test Post Title');
-      expect(res.body.data.post.creator.name).toBe('Test User');
+      expect(body.errors).toBeUndefined();
+      expect(body.data?.post._id).toBe(postId);
+      expect(body.data?.post.title).toBe('Test Post Title');
+      expect(body.data?.post.creator.name).toBe('Test User');
     });
 
     it('returns 401 when not authenticated', async () => {
@@ -155,10 +183,11 @@ describe('Feed CRUD', () => {
         }`,
         { id: postId }
       );
+      const body = res.body as GraphqlResponse;
 
-      expect(res.body.errors).toBeDefined();
-      expect(res.body.errors[0].message).toBe('Not authenticated!');
-      expect(res.body.errors[0].status).toBe(401);
+      expect(body.errors).toBeDefined();
+      expect(body.errors?.[0].message).toBe('Not authenticated!');
+      expect(body.errors?.[0].status).toBe(401);
     });
 
     it('returns 404 when post is not found', async () => {
@@ -169,10 +198,11 @@ describe('Feed CRUD', () => {
         { id: '507f1f77bcf86cd799439011' },
         token
       );
+      const body = res.body as GraphqlResponse;
 
-      expect(res.body.errors).toBeDefined();
-      expect(res.body.errors[0].message).toBe('No post found!');
-      expect(res.body.errors[0].status).toBe(404);
+      expect(body.errors).toBeDefined();
+      expect(body.errors?.[0].message).toBe('No post found!');
+      expect(body.errors?.[0].status).toBe(404);
     });
   });
 
@@ -194,10 +224,13 @@ describe('Feed CRUD', () => {
         },
         token
       );
+      const body = res.body as GraphqlResponse<{
+        updatePost: { title: string; content: string };
+      }>;
 
-      expect(res.body.errors).toBeUndefined();
-      expect(res.body.data.updatePost.title).toBe('Updated Title');
-      expect(res.body.data.updatePost.content).toBe('Updated content here');
+      expect(body.errors).toBeUndefined();
+      expect(body.data?.updatePost.title).toBe('Updated Title');
+      expect(body.data?.updatePost.content).toBe('Updated content here');
     });
 
     it('returns 401 when not authenticated', async () => {
@@ -214,10 +247,11 @@ describe('Feed CRUD', () => {
           imageUrl: 'images/test-image.jpg'
         }
       );
+      const body = res.body as GraphqlResponse;
 
-      expect(res.body.errors).toBeDefined();
-      expect(res.body.errors[0].message).toBe('Not authenticated!');
-      expect(res.body.errors[0].status).toBe(401);
+      expect(body.errors).toBeDefined();
+      expect(body.errors?.[0].message).toBe('Not authenticated!');
+      expect(body.errors?.[0].status).toBe(401);
     });
 
     it('returns 404 when post is not found', async () => {
@@ -235,10 +269,11 @@ describe('Feed CRUD', () => {
         },
         token
       );
+      const body = res.body as GraphqlResponse;
 
-      expect(res.body.errors).toBeDefined();
-      expect(res.body.errors[0].message).toBe('No post found!');
-      expect(res.body.errors[0].status).toBe(404);
+      expect(body.errors).toBeDefined();
+      expect(body.errors?.[0].message).toBe('No post found!');
+      expect(body.errors?.[0].status).toBe(404);
     });
 
     it('returns 403 when user is not the creator', async () => {
@@ -261,10 +296,11 @@ describe('Feed CRUD', () => {
         },
         otherUser.token
       );
+      const body = res.body as GraphqlResponse;
 
-      expect(res.body.errors).toBeDefined();
-      expect(res.body.errors[0].message).toBe('Not authorized!');
-      expect(res.body.errors[0].status).toBe(403);
+      expect(body.errors).toBeDefined();
+      expect(body.errors?.[0].message).toBe('Not authorized!');
+      expect(body.errors?.[0].status).toBe(403);
     });
 
     it('returns 422 when title is invalid', async () => {
@@ -282,10 +318,11 @@ describe('Feed CRUD', () => {
         },
         token
       );
+      const body = res.body as GraphqlResponse;
 
-      expect(res.body.errors).toBeDefined();
-      expect(res.body.errors[0].message).toBe('Invalid input.');
-      expect(res.body.errors[0].status).toBe(422);
+      expect(body.errors).toBeDefined();
+      expect(body.errors?.[0].message).toBe('Invalid input.');
+      expect(body.errors?.[0].status).toBe(422);
     });
 
     it('returns 422 when content is invalid', async () => {
@@ -303,10 +340,11 @@ describe('Feed CRUD', () => {
         },
         token
       );
+      const body = res.body as GraphqlResponse;
 
-      expect(res.body.errors).toBeDefined();
-      expect(res.body.errors[0].message).toBe('Invalid input.');
-      expect(res.body.errors[0].status).toBe(422);
+      expect(body.errors).toBeDefined();
+      expect(body.errors?.[0].message).toBe('Invalid input.');
+      expect(body.errors?.[0].status).toBe(422);
     });
   });
 
@@ -319,9 +357,10 @@ describe('Feed CRUD', () => {
         { id: postId },
         token
       );
+      const body = res.body as GraphqlResponse<{ deletePost: boolean }>;
 
-      expect(res.body.errors).toBeUndefined();
-      expect(res.body.data.deletePost).toBe(true);
+      expect(body.errors).toBeUndefined();
+      expect(body.data?.deletePost).toBe(true);
 
       const fetchRes = await graphqlRequest(
         `query FetchPost($id: ID!) {
@@ -330,8 +369,9 @@ describe('Feed CRUD', () => {
         { id: postId },
         token
       );
+      const fetchBody = fetchRes.body as GraphqlResponse;
 
-      expect(fetchRes.body.errors[0].message).toBe('No post found!');
+      expect(fetchBody.errors?.[0].message).toBe('No post found!');
     });
 
     it('returns 401 when not authenticated', async () => {
@@ -341,10 +381,11 @@ describe('Feed CRUD', () => {
         }`,
         { id: postId }
       );
+      const body = res.body as GraphqlResponse;
 
-      expect(res.body.errors).toBeDefined();
-      expect(res.body.errors[0].message).toBe('Not authenticated!');
-      expect(res.body.errors[0].status).toBe(401);
+      expect(body.errors).toBeDefined();
+      expect(body.errors?.[0].message).toBe('Not authenticated!');
+      expect(body.errors?.[0].status).toBe(401);
     });
 
     it('returns 404 when post is not found', async () => {
@@ -355,10 +396,11 @@ describe('Feed CRUD', () => {
         { id: '507f1f77bcf86cd799439011' },
         token
       );
+      const body = res.body as GraphqlResponse;
 
-      expect(res.body.errors).toBeDefined();
-      expect(res.body.errors[0].message).toBe('No post found!');
-      expect(res.body.errors[0].status).toBe(404);
+      expect(body.errors).toBeDefined();
+      expect(body.errors?.[0].message).toBe('No post found!');
+      expect(body.errors?.[0].status).toBe(404);
     });
 
     it('returns 403 when user is not the creator', async () => {
@@ -374,10 +416,11 @@ describe('Feed CRUD', () => {
         { id: postId },
         otherUser.token
       );
+      const body = res.body as GraphqlResponse;
 
-      expect(res.body.errors).toBeDefined();
-      expect(res.body.errors[0].message).toBe('Not authorized!');
-      expect(res.body.errors[0].status).toBe(403);
+      expect(body.errors).toBeDefined();
+      expect(body.errors?.[0].message).toBe('Not authorized!');
+      expect(body.errors?.[0].status).toBe(403);
     });
   });
 

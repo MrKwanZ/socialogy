@@ -1,9 +1,10 @@
-const { MongoMemoryServer } = require('mongodb-memory-server');
-const mongoose = require('mongoose');
-const fs = require('fs');
-const path = require('path');
+import { MongoMemoryServer } from 'mongodb-memory-server';
+import mongoose from 'mongoose';
+import fs from 'fs';
+import path from 'path';
+import app from '../app';
 
-let mongoServer;
+let mongoServer: MongoMemoryServer | undefined;
 
 beforeAll(async () => {
   mongoServer = await MongoMemoryServer.create();
@@ -17,7 +18,7 @@ beforeAll(async () => {
     fs.mkdirSync(imagesDir, { recursive: true });
   }
 
-  global.app = require('../app');
+  global.app = app;
 });
 
 afterEach(async () => {
