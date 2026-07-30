@@ -5,3 +5,4 @@ coverage
 images/*
 !images/.gitkeep
 *.log
+*.tsbuildinfo

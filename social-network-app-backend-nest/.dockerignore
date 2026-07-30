@@ -6,4 +6,5 @@ coverage
 images/*
 !images/.gitkeep
 *.md
+*.tsbuildinfo
 npm-debug.log
