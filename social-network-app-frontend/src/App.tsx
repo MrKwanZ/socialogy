@@ -93,6 +93,9 @@ const App = () => {
   const loginHandler = (event: FormEvent, authData: LoginCredentials) => {
     event.preventDefault();
 
+    const email = authData.email.trim().toLowerCase();
+    const password = authData.password;
+
     setAuthLoading(true);
     graphqlFetch<{ login: AuthData }>(
       `query UserLogin($email: String!, $password: String!) {
@@ -102,8 +105,8 @@ const App = () => {
         }
       }`,
       {
-        email: authData.email,
-        password: authData.password
+        email,
+        password
       }
     )
       .then((resData) => {
@@ -111,7 +114,11 @@ const App = () => {
           throw new Error(getGraphqlErrorMessage(resData.errors, 'login'));
         }
 
-        const loginData = resData.data!.login;
+        const loginData = resData.data?.login;
+        if (!loginData?.token || !loginData.userId) {
+          throw new Error('Login failed. Please try again!');
+        }
+
         setIsAuth(true);
         setToken(loginData.token);
         setAuthLoading(false);
@@ -137,7 +144,11 @@ const App = () => {
     event.preventDefault();
     setAuthLoading(true);
 
-    graphqlFetch(
+    const email = authData.signupForm.email.value.trim().toLowerCase();
+    const name = authData.signupForm.name.value.trim();
+    const password = authData.signupForm.password.value;
+
+    graphqlFetch<{ createUser: { _id: string; email: string } }>(
       `mutation CreateNewUser($email: String!, $name: String!, $password: String!) {
         createUser(userInput: {email: $email, name: $name, password: $password}) {
           _id
@@ -145,9 +156,9 @@ const App = () => {
         }
       }`,
       {
-        email: authData.signupForm.email.value,
-        name: authData.signupForm.name.value,
-        password: authData.signupForm.password.value
+        email,
+        name,
+        password
       }
     )
       .then((resData) => {
@@ -155,8 +166,48 @@ const App = () => {
           throw new Error(getGraphqlErrorMessage(resData.errors, 'signup'));
         }
 
-        setIsAuth(false);
+        if (!resData.data?.createUser?._id) {
+          throw new Error('Signup failed. Please try again!');
+        }
+
+        // Sign in immediately so a successful signup lands in the app.
+        return graphqlFetch<{ login: AuthData }>(
+          `query UserLogin($email: String!, $password: String!) {
+            login(email: $email, password: $password) {
+              token
+              userId
+            }
+          }`,
+          { email, password }
+        );
+      })
+      .then((resData) => {
+        if (!resData) {
+          return;
+        }
+        if (resData.errors) {
+          throw new Error(getGraphqlErrorMessage(resData.errors, 'login'));
+        }
+
+        const loginData = resData.data?.login;
+        if (!loginData?.token || !loginData.userId) {
+          throw new Error(
+            'Account created, but automatic login failed. Please log in.'
+          );
+        }
+
+        setIsAuth(true);
+        setToken(loginData.token);
+        setUserId(loginData.userId);
         setAuthLoading(false);
+        localStorage.setItem('token', loginData.token);
+        localStorage.setItem('userId', loginData.userId);
+        const remainingMilliseconds = 60 * 60 * 1000;
+        const newExpiryDate = new Date(
+          new Date().getTime() + remainingMilliseconds
+        );
+        localStorage.setItem('expiryDate', newExpiryDate.toISOString());
+        setAutoLogout(remainingMilliseconds);
         navigate('/', { replace: true });
       })
       .catch((err: Error) => {

@@ -24,5 +24,12 @@ export async function graphqlFetch<TData = Record<string, unknown>>(
     body: JSON.stringify({ query, variables })
   });
 
+  const contentType = response.headers.get('content-type') ?? '';
+  if (!contentType.includes('application/json')) {
+    throw new Error(
+      `Unexpected response from API (${response.status}). Is the backend running at ${API_URL}?`
+    );
+  }
+
   return response.json() as Promise<GraphqlResponse<TData>>;
 }
