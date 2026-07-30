@@ -1,7 +1,10 @@
 node_modules
 dist
-.env
-.gitignore
-tests
-*.test.ts
 coverage
+.git
+.env
+images/*
+!images/.gitkeep
+*.md
+*.tsbuildinfo
+npm-debug.log

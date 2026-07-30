@@ -1,9 +1,9 @@
 # Developer PostgreSQL for the NestJS backend (optional package-local compose).
-# Root docker-compose.yaml is the full Nest + Postgres + frontend stack.
+# Root docker-compose.yaml is the full Nest + Postgres + frontend production stack.
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: socialogy-nest-postgres
+    container_name: socialogy-backend-postgres
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -11,7 +11,7 @@ services:
     ports:
       - '5432:5432'
     volumes:
-      - socialogy_nest_pg_data:/var/lib/postgresql/data
+      - socialogy_backend_pg_data:/var/lib/postgresql/data
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U postgres -d socialogy']
       interval: 5s
@@ -19,11 +19,11 @@ services:
       retries: 10
     restart: unless-stopped
 
-  backend-nest:
+  backend:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: socialogy-nest-backend
+    container_name: socialogy-backend-local
     depends_on:
       postgres:
         condition: service_healthy
@@ -42,9 +42,9 @@ services:
     ports:
       - '8081:8080'
     volumes:
-      - nest_images:/app/images
+      - backend_images:/app/images
     restart: unless-stopped
 
 volumes:
-  socialogy_nest_pg_data:
-  nest_images:
+  socialogy_backend_pg_data:
+  backend_images:

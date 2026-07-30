@@ -1,5 +1,8 @@
 node_modules
 dist
-data
-images
+coverage
 .env
+images/*
+!images/.gitkeep
+*.log
+*.tsbuildinfo

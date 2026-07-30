@@ -9,7 +9,7 @@
  * Env:
  *   MONGODB_URI          Source Mongo connection string (required)
  *   DB_*                 Target Postgres (same as Nest app)
- *   MIGRATE_IMAGES_SRC   Optional; default ../social-network-app-backend/images
+ *   MIGRATE_IMAGES_SRC   Optional; default ../archive/social-network-app-backend-express/images
  *   MIGRATE_IMAGES_DEST  Optional; default ./images (UPLOAD_PATH)
  *
  * Flags:
@@ -54,7 +54,7 @@ async function main(): Promise<void> {
   const imagesSourceDir =
     readArg('--images-source') ??
     process.env.MIGRATE_IMAGES_SRC ??
-    path.join(repoRoot, 'social-network-app-backend', 'images');
+    path.join(repoRoot, 'archive', 'social-network-app-backend-express', 'images');
 
   const imagesDestDir =
     readArg('--images-dest') ??

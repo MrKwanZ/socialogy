@@ -1,28 +1,25 @@
 {
   "compilerOptions": {
-    "target": "ES2022",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
-    "outDir": "./dist",
-    "rootDir": ".",
-    "strict": true,
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "resolvePackageJsonExports": true,
     "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true,
     "isolatedModules": true,
-    "sourceMap": true,
     "declaration": true,
-    "declarationMap": true,
-    "typeRoots": ["./node_modules/@types", "./types"]
-  },
-  "include": [
-    "app.ts",
-    "graphql/**/*.ts",
-    "middleware/**/*.ts",
-    "models/**/*.ts",
-    "util/**/*.ts",
-    "types/**/*.ts"
-  ],
-  "exclude": ["node_modules", "dist", "tests"]
+    "removeComments": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "target": "ES2023",
+    "sourceMap": true,
+    "outDir": "./dist",
+    "baseUrl": "./",
+    "incremental": true,
+    "skipLibCheck": true,
+    "strictNullChecks": true,
+    "forceConsistentCasingInFileNames": true,
+    "noImplicitAny": true,
+    "strictBindCallApply": true,
+    "noFallthroughCasesInSwitch": true
+  }
 }
