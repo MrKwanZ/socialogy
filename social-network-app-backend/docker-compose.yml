@@ -1,19 +1,24 @@
 # Developer PostgreSQL for the NestJS backend (optional package-local compose).
 # Root docker-compose.yaml is the full Nest + Postgres + frontend production stack.
+# Credentials and config come from .env (see .env.example).
 services:
   postgres:
     image: postgres:16-alpine
     container_name: socialogy-backend-postgres
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: socialogy
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_DATABASE}
     ports:
       - '5432:5432'
     volumes:
       - socialogy_backend_pg_data:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U postgres -d socialogy']
+      test:
+        [
+          'CMD-SHELL',
+          'pg_isready -U ${DB_USER} -d ${DB_DATABASE}',
+        ]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -28,17 +33,18 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      PORT: 8080
-      CORS_ORIGIN: '*'
-      UPLOAD_PATH: images
+      PORT: ${PORT}
+      CORS_ORIGIN: ${CORS_ORIGIN}
+      UPLOAD_PATH: ${UPLOAD_PATH}
+      # Compose service name — overrides DB_HOST=localhost used for host-side Nest.
       DB_HOST: postgres
-      DB_PORT: 5432
-      DB_USER: postgres
-      DB_PASSWORD: postgres
-      DB_DATABASE: socialogy
-      DB_SYNC: '0'
-      JWT_SECRET: change_me_to_a_long_random_secret
-      JWT_EXPIRES_IN: 1h
+      DB_PORT: ${DB_PORT}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_DATABASE: ${DB_DATABASE}
+      DB_SYNC: ${DB_SYNC}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN}
     ports:
       - '8081:8080'
     volumes:

@@ -8,3 +8,4 @@ images/*
 *.md
 *.tsbuildinfo
 npm-debug.log
+*.pem

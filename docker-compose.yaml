@@ -1,24 +1,30 @@
 # Socialogy stack — NestJS + PostgreSQL.
+# Credentials and config come from .env (see .env.example).
 services:
   postgres:
     image: postgres:16-alpine
     container_name: socialogy-postgres
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: socialogy
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
       - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U postgres -d socialogy']
+      test:
+        [
+          'CMD-SHELL',
+          'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}',
+        ]
       interval: 5s
       timeout: 5s
       retries: 10
     restart: unless-stopped
 
   backend:
+    image: chengkh/socialogy-backend:latest
     build:
       context: ./social-network-app-backend
       dockerfile: Dockerfile
@@ -29,33 +35,34 @@ services:
     ports:
       - '8080:8080'
     environment:
-      PORT: 8080
-      CORS_ORIGIN: '*'
-      UPLOAD_PATH: images
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_USER: postgres
-      DB_PASSWORD: postgres
-      DB_DATABASE: socialogy
-      DB_SYNC: '0'
-      JWT_SECRET: change_me_to_a_long_random_secret
-      JWT_EXPIRES_IN: 1h
+      PORT: ${PORT}
+      CORS_ORIGIN: ${CORS_ORIGIN}
+      UPLOAD_PATH: ${UPLOAD_PATH}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_DATABASE: ${DB_DATABASE}
+      DB_SYNC: ${DB_SYNC}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN}
     volumes:
       - backend_images:/app/images
     restart: unless-stopped
 
   frontend:
+    image: chengkh/socialogy-frontend:latest
     build:
       context: ./social-network-app-frontend
       dockerfile: Dockerfile
       target: development
       args:
-        VITE_API_URL: http://localhost:8080
+        VITE_API_URL: ${VITE_API_URL}
     container_name: socialogy-frontend
     ports:
       - '3000:3000'
     environment:
-      VITE_API_URL: http://localhost:8080
+      VITE_API_URL: ${VITE_API_URL}
     depends_on:
       - backend
     restart: unless-stopped
