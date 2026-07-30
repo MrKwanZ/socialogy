@@ -18,5 +18,9 @@ export function getRootDir(): string {
     return path.join(dir, '..');
   }
 
+  if (path.basename(dir) === 'scripts') {
+    return path.join(dir, '..');
+  }
+
   return dir;
 }

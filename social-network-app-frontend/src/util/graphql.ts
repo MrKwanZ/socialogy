@@ -1,6 +1,9 @@
 import type { GraphqlResponse } from '../types/graphql';
 
-export const API_URL = 'http://localhost:8080';
+/** Backend origin (no trailing slash). Override with `VITE_API_URL`. */
+export const API_URL = (
+  import.meta.env.VITE_API_URL ?? 'http://localhost:8080'
+).replace(/\/$/, '');
 
 export async function graphqlFetch<TData = Record<string, unknown>>(
   query: string,

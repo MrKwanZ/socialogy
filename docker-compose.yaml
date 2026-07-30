@@ -1,32 +1,66 @@
+# Socialogy stack — NestJS + PostgreSQL (Phase 7).
+# Express/Mongo remain in-repo until Phase 8 cutover; they are not started here.
 services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: socialogy-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: socialogy
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d socialogy']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
   backend:
     build:
-      context: ./social-network-app-backend
+      context: ./social-network-app-backend-nest
       dockerfile: Dockerfile
-    ports:
-      - "8080:8080"
-    volumes:
-      - ./social-network-app-backend/images:/app/images
-    env_file:
-      - ./social-network-app-backend/.env
+    container_name: socialogy-backend
     depends_on:
-      - mongo
+      postgres:
+        condition: service_healthy
+    ports:
+      - '8080:8080'
+    environment:
+      PORT: 8080
+      CORS_ORIGIN: '*'
+      UPLOAD_PATH: images
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_DATABASE: socialogy
+      DB_SYNC: '0'
+      JWT_SECRET: change_me_to_a_long_random_secret
+      JWT_EXPIRES_IN: 1h
+    volumes:
+      - backend_images:/app/images
+    restart: unless-stopped
 
   frontend:
     build:
       context: ./social-network-app-frontend
       dockerfile: Dockerfile
       target: development
+      args:
+        VITE_API_URL: http://localhost:8080
+    container_name: socialogy-frontend
     ports:
-      - "3000:3000"
-    env_file:
-      - ./social-network-app-frontend/.env
+      - '3000:3000'
+    environment:
+      VITE_API_URL: http://localhost:8080
     depends_on:
       - backend
+    restart: unless-stopped
 
-  mongo:
-    image: mongo:latest
-    ports:
-      - "27017:27017"
-    volumes:
-      - ./social-network-app-backend/data:/data/db
+volumes:
+  postgres_data:
+  backend_images:

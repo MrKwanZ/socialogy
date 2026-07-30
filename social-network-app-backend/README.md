@@ -23,13 +23,15 @@ A Node.js/Express API for a social network platform, written in **TypeScript**. 
 - User status updates
 - Image upload for post attachments (`PUT /post-image`)
 - CORS enabled for cross-origin frontend requests
-- Integration test suite (Jest + Supertest, 36 tests)
+- Integration test suite (Jest + Supertest, 46 tests including Phase 0 contract freeze)
 
 ## IMPORTANT
 
+**This Express + MongoDB backend is the legacy implementation.** Prefer [`social-network-app-backend-nest`](../social-network-app-backend-nest) and the root [`docker-compose.yaml`](../docker-compose.yaml) (Nest + PostgreSQL). This package is retained for contract tests and Phase 8 rollback.
+
 **This backend is not a complete application on its own.**
 
-You must also set up and run the companion frontend repository (`social-network-app-frontend`) to use the full social network app. The frontend connects to this API at `http://localhost:8080` for GraphQL and image uploads.
+You must also set up and run the companion frontend repository (`social-network-app-frontend`) to use the full social network app. The frontend connects via `VITE_API_URL` (default `http://localhost:8080`) for GraphQL and image uploads.
 
 Without the frontend, you can still send GraphQL requests to `http://localhost:8080/graphql` for manual API testing, but there is no user-facing UI.
 
@@ -95,6 +97,7 @@ MERN/
 | `npm run build` | Compile TypeScript to `dist/` |
 | `npm run type-check` | Type-check application and test files |
 | `npm test` | Run integration tests (in-memory MongoDB) |
+| `npm run integrity-check` | Audit live MongoDB counts, orphans, hashes, images |
 
 ## API Endpoints
 
@@ -138,7 +141,9 @@ social-network-app-backend/
 │   ├── graphql.ts         # GraphQL response types
 │   ├── global.d.ts        # Test global augmentation
 │   └── models.ts          # Mongoose document interfaces
-├── tests/                 # Jest integration tests
+├── tests/                 # Jest integration + contract freeze tests
+├── scripts/
+│   └── integrity-check.ts # MongoDB baseline for Nest/PG migration
 ├── images/                # Uploaded images (gitignored)
 ├── tsconfig.json
 ├── tsconfig.test.json
@@ -154,7 +159,22 @@ Tests use an in-memory MongoDB instance — no Atlas connection required.
 npm test
 ```
 
-Test suites cover auth (`createUser`, `login`) and post CRUD (`createPost`, `updatePost`, `deletePost`, `posts` pagination).
+Suites:
+
+- `auth.test.ts` — signup, login, user, updateStatus
+- `feed-crud.test.ts` — post CRUD, pagination, image upload
+- `contract.test.ts` — Phase 0 compatibility freeze (JWT, bcrypt 12, CORS, image sentinel, sort order)
+
+### MongoDB integrity baseline (Phase 0 / migration)
+
+Against a live database configured via `MONGODB_URI`:
+
+```bash
+npm run integrity-check
+npm run integrity-check -- --write
+```
+
+Contract docs live in the monorepo at `docs/revamp/`.
 
 ## Docker
 

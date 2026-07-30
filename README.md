@@ -1,51 +1,33 @@
 # Socialogy
 
-A full-stack social network application built with the MERN stack and **TypeScript**. Users can sign up, log in, update their status, and create, view, edit, and delete posts with image uploads. The React frontend talks to a Node.js/Express backend over GraphQL and a REST image-upload endpoint.
+A full-stack social network application. Users can sign up, log in, update their status, and create, view, edit, and delete posts with image uploads. The React frontend talks to a **NestJS + PostgreSQL** backend over GraphQL and a REST image-upload endpoint.
+
+> **Revamp status:** Phases 0–7 of the Nest/PG migration are done. The Express/Mongo package remains in-repo for rollback until Phase 8 cutover. Root Docker and the recommended local path use Nest + Postgres.
 
 ## Project Structure
 
 ```
 socialogy/
-├── docker-compose.yaml              # Run backend, frontend, and MongoDB together
-├── .github/workflows/ci.yml         # Type-check, build, and test on push/PR
-├── social-network-app-backend/      # Express API (GraphQL + image upload)
-│   ├── Dockerfile                   # Multi-stage: compile TS → run dist/app.js
-│   ├── app.ts                       # Express app, routes, MongoDB connect
-│   ├── graphql/                     # schema.ts, resolvers.ts
-│   ├── middleware/                  # JWT auth
-│   ├── models/                      # User, Post (Mongoose)
-│   ├── util/                        # Mappers, paths, file helpers
-│   ├── types/                       # Shared TS types and Express augmentation
-│   ├── tests/                       # Jest + Supertest integration tests
-│   ├── tsconfig.json
-│   ├── jest.config.js
-│   ├── .env.example
-│   └── README.md
-└── social-network-app-frontend/     # React SPA (Vite + TypeScript)
-    ├── Dockerfile                   # Dev target (default) + production nginx target
-    ├── vite.config.ts
-    ├── index.html
-    ├── src/
-    │   ├── App.tsx                  # Auth state, routing, GraphQL calls
-    │   ├── index.tsx
-    │   ├── types/                   # GraphQL and form types
-    │   ├── util/                    # graphql, validators, formValidation
-    │   ├── components/
-    │   └── pages/
-    └── README.md
+├── docker-compose.yaml              # Nest backend, frontend, PostgreSQL
+├── .github/workflows/ci.yml         # Express + Nest + frontend CI
+├── docs/revamp/                     # NestJS + PostgreSQL revamp phase docs
+├── social-network-app-backend-nest/ # NestJS + PostgreSQL API (recommended)
+├── social-network-app-backend/      # Express + Mongo (legacy until Phase 8)
+├── social-network-app-frontend/     # React SPA (Vite + TypeScript)
+└── NestJS/intro-to-nestjs/          # Tutorial reference (not production)
 ```
 
-Both services are required for the full application. The frontend sends requests to the backend at `http://localhost:8080`.
+The frontend reads the API origin from `VITE_API_URL` (default `http://localhost:8080`).
 
 ## Tech Stack
 
 | Layer    | Technologies                                              |
 | -------- | --------------------------------------------------------- |
 | Frontend | React 19, React Router 7, Vite 6, TypeScript (strict)    |
-| Backend  | Node.js, Express 4, GraphQL (`graphql-http`), TypeScript |
-| Database | MongoDB (Atlas or local) via Mongoose 8                   |
-| Testing  | Jest, Supertest, MongoDB Memory Server                    |
-| CI       | GitHub Actions (type-check, build, tests)                 |
+| Backend  | NestJS 11, GraphQL (Apollo), TypeORM, TypeScript         |
+| Database | PostgreSQL 16                                             |
+| Testing  | Jest, Supertest (Nest e2e); Express suite retained        |
+| CI       | GitHub Actions (type-check, lint, migrate, tests, build)  |
 
 ## Features
 
@@ -57,80 +39,62 @@ Both services are required for the full application. The frontend sends requests
 - User status updates
 - Responsive layout with mobile navigation
 - Blur-based form validation with inline error messages
-- Backend integration test suite (36 tests)
+- Nest backend e2e suite (auth, feed, upload, Mongo→PG migrate rehearsal)
 
 ## Prerequisites
 
-- [Node.js](https://nodejs.org/) 18+ (20 LTS recommended)
+- [Node.js](https://nodejs.org/) 20+
 - npm
-- [MongoDB Atlas](https://www.mongodb.com/atlas) cluster **or** Docker (for local MongoDB via `docker-compose`)
+- [Docker](https://www.docker.com/) (for PostgreSQL / full stack)
 
 ## Quick Start (Local Development)
 
-### 1. Backend
+### 1. PostgreSQL + Nest backend
 
 ```bash
-cd social-network-app-backend
-npm install
+cd social-network-app-backend-nest
 cp .env.example .env
+docker compose up -d postgres   # package compose, or use root compose postgres
+npm install
+npm run migration:run
+npm run start:dev
 ```
 
-Edit `.env` with your MongoDB connection string and JWT secret:
+| Variable       | Description                                      |
+| -------------- | ------------------------------------------------ |
+| `DB_HOST`      | Postgres host (`localhost` for host-run Nest)    |
+| `DB_PORT`      | Postgres port (default `5432`)                   |
+| `DB_USER`      | Database user                                    |
+| `DB_PASSWORD`  | Database password                                |
+| `DB_DATABASE`  | Database name                                    |
+| `JWT_SECRET`   | Secret key for signing JWT tokens                |
+| `PORT`         | Server port (default `8080`)                     |
 
-| Variable      | Description                       |
-| ------------- | --------------------------------- |
-| `MONGODB_URI` | MongoDB connection string         |
-| `JWT_SECRET`  | Secret key for signing JWT tokens |
-| `PORT`        | Server port (default: `8080`)     |
-
-```bash
-npm run dev
-```
-
-Confirm the server is running at [http://localhost:8080](http://localhost:8080). GraphQL is available at [http://localhost:8080/graphql](http://localhost:8080/graphql).
+Confirm [http://localhost:8080/health](http://localhost:8080/health) and GraphQL at [http://localhost:8080/graphql](http://localhost:8080/graphql).
 
 ### 2. Frontend
 
-In a separate terminal:
-
 ```bash
 cd social-network-app-frontend
+cp .env.example .env
 npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+Open [http://localhost:3000](http://localhost:3000). Override the API with `VITE_API_URL` if needed.
 
-For more detail, see the per-project READMEs:
+Per-project READMEs:
 
-- [Backend setup & API](social-network-app-backend/README.md)
-- [Frontend setup & configuration](social-network-app-frontend/README.md)
+- [Nest backend](social-network-app-backend-nest/README.md)
+- [Frontend](social-network-app-frontend/README.md)
+- [Express backend (legacy)](social-network-app-backend/README.md)
 
 ## Quick Start (Docker)
 
-From the repository root, configure the backend environment first:
+From the repository root:
 
 ```bash
-cp social-network-app-backend/.env.example social-network-app-backend/.env
-```
-
-For Docker, point `MONGODB_URI` at the bundled MongoDB service:
-
-```
-MONGODB_URI=mongodb://mongo:27017/social-network
-JWT_SECRET=your_jwt_secret_here
-PORT=8080
-```
-
-Create an empty frontend env file (referenced by `docker-compose.yaml`):
-
-```bash
-touch social-network-app-frontend/.env
-```
-
-Start all services:
-
-```bash
+cp social-network-app-frontend/.env.example social-network-app-frontend/.env
 docker compose up --build
 ```
 
@@ -139,13 +103,23 @@ docker compose up --build
 | Frontend    | [http://localhost:3000](http://localhost:3000) (Vite dev)    |
 | Backend API | [http://localhost:8080](http://localhost:8080)                 |
 | GraphQL     | [http://localhost:8080/graphql](http://localhost:8080/graphql) |
-| MongoDB     | `localhost:27017`                                              |
+| PostgreSQL  | `localhost:5432` (`socialogy` / user `postgres`)               |
 
-- **Backend container** compiles TypeScript and runs `node dist/app.js`.
-- **Frontend container** runs the Vite dev server with hot reload (`development` target).
-- For a static production frontend image, build with `docker build --target production`.
+- **Backend** runs TypeORM migrations on start (`npm run start:prod`), then Nest.
+- **Frontend** uses `VITE_API_URL=http://localhost:8080` (browser → host-mapped API).
+- Images persist in the `backend_images` volume; Postgres data in `postgres_data`.
 
-Uploaded images are persisted via volume mounts; MongoDB data is stored in `social-network-app-backend/data/`.
+### Backup and recovery (PostgreSQL)
+
+```bash
+# Logical backup
+docker compose exec postgres pg_dump -U postgres socialogy > backup.sql
+
+# Restore into a running postgres service
+docker compose exec -T postgres psql -U postgres socialogy < backup.sql
+```
+
+After a wipe, recreate schema with `npm run migration:run` in `social-network-app-backend-nest` (or restart the backend container, which migrates on boot). For Mongo→PG data migration rehearsals, see [Phase 6 checklist](docs/revamp/phase-6-checklist.md).
 
 ## API Overview
 
@@ -154,6 +128,7 @@ Uploaded images are persisted via volume mounts; MongoDB data is stored in `soci
 | `POST` | `/graphql`    | GraphQL API (auth, posts, user)                     |
 | `PUT`  | `/post-image` | Upload post image (`Authorization` header required) |
 | `GET`  | `/images/*`   | Serve uploaded images                               |
+| `GET`  | `/health`     | Nest health check                                   |
 
 **GraphQL queries:** `login`, `posts`, `post`, `user`  
 **GraphQL mutations:** `createUser`, `createPost`, `updatePost`, `deletePost`, `updateStatus`
@@ -166,33 +141,32 @@ Authorization: Bearer <token>
 
 ## Scripts
 
-### Backend (`social-network-app-backend/`)
+### Nest backend (`social-network-app-backend-nest/`)
 
-| Command            | Description                                      |
-| ------------------ | ------------------------------------------------ |
-| `npm run dev`      | Start dev server with nodemon + tsx (hot reload) |
-| `npm start`        | Run compiled production build (`dist/app.js`)    |
-| `npm run build`    | Compile TypeScript → `dist/`                     |
-| `npm run type-check` | Type-check app and tests (no emit)             |
-| `npm test`         | Run integration tests (in-memory MongoDB)        |
+| Command                     | Description                                      |
+| --------------------------- | ------------------------------------------------ |
+| `npm run start:dev`         | Watch mode                                       |
+| `npm run migration:run`     | Apply TypeORM migrations                         |
+| `npm run test:e2e`          | Integration/e2e suite (needs Postgres)           |
+| `npm run migrate:mongo:dry` | Plan Mongo→PG data migration                     |
 
 ### Frontend (`social-network-app-frontend/`)
 
-| Command            | Description                          |
-| ------------------ | ------------------------------------ |
-| `npm run dev`      | Start Vite dev server (port 3000)    |
-| `npm run build`    | Production build → `dist/`           |
-| `npm run preview`  | Preview the production build locally |
-| `npm run type-check` | Type-check with `tsc -b`           |
+| Command              | Description                       |
+| -------------------- | --------------------------------- |
+| `npm run dev`        | Vite dev server (port 3000)       |
+| `npm run build`      | Production build → `dist/`        |
+| `npm run type-check` | Type-check with `tsc -b`          |
 
 ## CI
 
-On push/PR to `main` or `master`, GitHub Actions runs for both packages:
+On push/PR to `main` or `master`, GitHub Actions runs:
 
-1. `npm ci`
-2. `npm run type-check`
-3. `npm run build`
-4. `npm test` (backend only)
+1. **Express (legacy):** type-check, build, tests (in-memory Mongo — no Mongo service)
+2. **Nest:** type-check, lint, build, migrate Postgres service, unit + e2e tests
+3. **Frontend:** type-check, build (`VITE_API_URL`)
+
+No MongoDB service is required in CI.
 
 ## License
 

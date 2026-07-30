@@ -27,26 +27,19 @@ A React single-page application for a social network platform, written in **Type
 
 **This frontend cannot run as a full application on its own.**
 
-You must also set up and run the companion backend repository (`social-network-app-backend`) before using this app. The frontend sends all API requests to the backend at `http://localhost:8080` for:
+You must also run a backend that implements the frozen GraphQL + upload contract. Recommended: NestJS + PostgreSQL (`social-network-app-backend-nest`). The Express package remains until Phase 8 cutover.
+
+API origin defaults to `http://localhost:8080` and is configured via `VITE_API_URL`:
 
 - GraphQL (`/graphql`) — auth, posts, user status
 - Image upload (`/post-image`)
-
-Without the backend running, login, signup, and feed features will fail.
-
-Clone or place both projects side by side, for example:
-
-```
-MERN/
-├── social-network-app-frontend/   ← this project
-└── social-network-app-backend/    ← required
-```
+- Static images (`/images/*`)
 
 ## Prerequisites
 
 - [Node.js](https://nodejs.org/) 18+ (20 LTS recommended)
 - npm
-- Running backend server on port **8080** (see backend README / setup)
+- Running backend on the URL in `VITE_API_URL` (default port **8080**)
 
 ## Setup
 
@@ -56,24 +49,30 @@ MERN/
    npm install
    ```
 
-2. **Start the backend first**
-
-   In a separate terminal, from `social-network-app-backend`:
+2. **Configure the API URL**
 
    ```bash
-   npm install
+   cp .env.example .env
+   ```
+
+   | Variable        | Description                                      |
+   | --------------- | ------------------------------------------------ |
+   | `VITE_API_URL`  | Backend origin (default `http://localhost:8080`) |
+
+3. **Start the backend first** (Nest recommended)
+
+   ```bash
+   cd ../social-network-app-backend-nest
+   npm run start:dev
+   ```
+
+4. **Start the frontend**
+
+   ```bash
    npm run dev
    ```
 
-   Confirm the backend is listening on `http://localhost:8080`.
-
-3. **Start the frontend**
-
-   ```bash
-   npm run dev
-   ```
-
-4. **Open the app**
+5. **Open the app**
 
    Visit [http://localhost:3000](http://localhost:3000) in your browser.
 
@@ -98,22 +97,14 @@ social-network-app-frontend/
 │   ├── util/            # graphql, validators, formValidation, image
 │   ├── App.tsx          # Root app, auth state, routing
 │   └── index.tsx        # Entry point
+├── .env.example         # VITE_API_URL
 ├── index.html           # Vite HTML template
-├── vite.config.ts       # Vite configuration
-├── tsconfig.json        # Project references root
-├── tsconfig.app.json    # App source type-check config
-└── tsconfig.node.json   # Vite config type-check
+└── vite.config.ts       # Vite configuration
 ```
 
 ## API Configuration
 
-The backend URL is defined in `src/util/graphql.ts`:
-
-```typescript
-export const API_URL = 'http://localhost:8080';
-```
-
-If your backend runs on a different host or port, update `API_URL` there. All GraphQL calls go through the shared `graphqlFetch()` helper in the same file.
+`src/util/graphql.ts` exports `API_URL` from `import.meta.env.VITE_API_URL` (fallback `http://localhost:8080`). All GraphQL, upload, and image URL construction uses that constant.
 
 ## Docker
 
@@ -124,10 +115,10 @@ The Dockerfile provides two build targets:
 | `development` (default in `docker-compose`) | Vite dev server with hot reload on port 3000 |
 | `production` | Static build served by nginx on port 80 |
 
-Build the production image:
+Pass the API URL at build time for production:
 
 ```bash
-docker build --target production -t socialogy-frontend .
+docker build --target production --build-arg VITE_API_URL=http://localhost:8080 -t socialogy-frontend .
 ```
 
 ## License

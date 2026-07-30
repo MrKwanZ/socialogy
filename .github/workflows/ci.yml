@@ -6,8 +6,8 @@ on:
   pull_request:
 
 jobs:
-  backend:
-    name: Backend
+  backend-express:
+    name: Backend (Express / legacy)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -29,12 +29,69 @@ jobs:
 
       - run: npm test
 
+  backend-nest:
+    name: Backend (Nest / PostgreSQL)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: social-network-app-backend-nest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: socialogy
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d socialogy"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_DATABASE: socialogy
+      DB_SYNC: '0'
+      JWT_SECRET: ci_jwt_secret_change_me
+      JWT_EXPIRES_IN: 1h
+      PORT: 8080
+      CORS_ORIGIN: '*'
+      UPLOAD_PATH: images
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: social-network-app-backend-nest/package-lock.json
+
+      - run: npm ci
+
+      - run: npm run type-check
+
+      - run: npm run lint:check
+
+      - run: npm run build
+
+      - run: npm run migration:run
+
+      - run: npm test
+
+      - run: npm run test:e2e
+
   frontend:
     name: Frontend
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: social-network-app-frontend
+    env:
+      VITE_API_URL: http://localhost:8080
     steps:
       - uses: actions/checkout@v4
 

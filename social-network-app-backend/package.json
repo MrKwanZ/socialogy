@@ -8,7 +8,8 @@
     "dev": "nodemon --exec tsx app.ts",
     "start": "node dist/app.js",
     "type-check": "tsc --noEmit && tsc -p tsconfig.test.json --noEmit",
-    "test": "jest --runInBand --forceExit"
+    "test": "jest --runInBand --forceExit",
+    "integrity-check": "tsx scripts/integrity-check.ts"
   },
   "author": "",
   "license": "ISC",
