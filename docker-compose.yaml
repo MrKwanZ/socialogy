@@ -1,5 +1,4 @@
-# Socialogy stack — NestJS + PostgreSQL (Phase 7).
-# Express/Mongo remain in-repo until Phase 8 cutover; they are not started here.
+# Socialogy stack — NestJS + PostgreSQL.
 services:
   postgres:
     image: postgres:16-alpine
@@ -21,7 +20,7 @@ services:
 
   backend:
     build:
-      context: ./social-network-app-backend-nest
+      context: ./social-network-app-backend
       dockerfile: Dockerfile
     container_name: socialogy-backend
     depends_on:

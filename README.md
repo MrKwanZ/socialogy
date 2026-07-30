@@ -2,19 +2,20 @@
 
 A full-stack social network application. Users can sign up, log in, update their status, and create, view, edit, and delete posts with image uploads. The React frontend talks to a **NestJS + PostgreSQL** backend over GraphQL and a REST image-upload endpoint.
 
-> **Revamp status:** Phases 0–7 of the Nest/PG migration are done. The Express/Mongo package remains in-repo for rollback until Phase 8 cutover. Root Docker and the recommended local path use Nest + Postgres.
+The former Express/Mongo API is frozen under [`archive/`](archive/README.md) for emergency rollback only.
 
 ## Project Structure
 
 ```
 socialogy/
-├── docker-compose.yaml              # Nest backend, frontend, PostgreSQL
-├── .github/workflows/ci.yml         # Express + Nest + frontend CI
-├── docs/revamp/                     # NestJS + PostgreSQL revamp phase docs
-├── social-network-app-backend-nest/ # NestJS + PostgreSQL API (recommended)
-├── social-network-app-backend/      # Express + Mongo (legacy until Phase 8)
-├── social-network-app-frontend/     # React SPA (Vite + TypeScript)
-└── NestJS/intro-to-nestjs/          # Tutorial reference (not production)
+├── docker-compose.yaml                 # Nest backend, frontend, PostgreSQL
+├── .github/workflows/ci.yml            # Nest + frontend CI
+├── scripts/smoke-cutover.sh            # API smoke tests
+├── docs/revamp/                        # Migration docs + cutover runbook
+├── social-network-app-backend/    # NestJS + PostgreSQL API
+├── social-network-app-frontend/        # React SPA (Vite + TypeScript)
+├── archive/                            # Express/Mongo snapshot (rollback only)
+└── NestJS/intro-to-nestjs/             # Tutorial reference (not production)
 ```
 
 The frontend reads the API origin from `VITE_API_URL` (default `http://localhost:8080`).
@@ -26,7 +27,7 @@ The frontend reads the API origin from `VITE_API_URL` (default `http://localhost
 | Frontend | React 19, React Router 7, Vite 6, TypeScript (strict)    |
 | Backend  | NestJS 11, GraphQL (Apollo), TypeORM, TypeScript         |
 | Database | PostgreSQL 16                                             |
-| Testing  | Jest, Supertest (Nest e2e); Express suite retained        |
+| Testing  | Jest, Supertest (Nest e2e + migrate rehearsal)            |
 | CI       | GitHub Actions (type-check, lint, migrate, tests, build)  |
 
 ## Features
@@ -39,7 +40,6 @@ The frontend reads the API origin from `VITE_API_URL` (default `http://localhost
 - User status updates
 - Responsive layout with mobile navigation
 - Blur-based form validation with inline error messages
-- Nest backend e2e suite (auth, feed, upload, Mongo→PG migrate rehearsal)
 
 ## Prerequisites
 
@@ -49,10 +49,10 @@ The frontend reads the API origin from `VITE_API_URL` (default `http://localhost
 
 ## Quick Start (Local Development)
 
-### 1. PostgreSQL + Nest backend
+### 1. PostgreSQL + backend
 
 ```bash
-cd social-network-app-backend-nest
+cd social-network-app-backend
 cp .env.example .env
 docker compose up -d postgres   # package compose, or use root compose postgres
 npm install
@@ -85,9 +85,8 @@ Open [http://localhost:3000](http://localhost:3000). Override the API with `VITE
 
 Per-project READMEs:
 
-- [Nest backend](social-network-app-backend-nest/README.md)
+- [Backend](social-network-app-backend/README.md)
 - [Frontend](social-network-app-frontend/README.md)
-- [Express backend (legacy)](social-network-app-backend/README.md)
 
 ## Quick Start (Docker)
 
@@ -119,7 +118,7 @@ docker compose exec postgres pg_dump -U postgres socialogy > backup.sql
 docker compose exec -T postgres psql -U postgres socialogy < backup.sql
 ```
 
-After a wipe, recreate schema with `npm run migration:run` in `social-network-app-backend-nest` (or restart the backend container, which migrates on boot). For Mongo→PG data migration rehearsals, see [Phase 6 checklist](docs/revamp/phase-6-checklist.md).
+After a wipe, recreate schema with `npm run migration:run` in `social-network-app-backend` (or restart the backend container, which migrates on boot). Cutover and emergency Express rollback: [cutover runbook](docs/revamp/phase-8-cutover-runbook.md).
 
 ## API Overview
 
@@ -141,14 +140,14 @@ Authorization: Bearer <token>
 
 ## Scripts
 
-### Nest backend (`social-network-app-backend-nest/`)
+### Backend (`social-network-app-backend/`)
 
 | Command                     | Description                                      |
 | --------------------------- | ------------------------------------------------ |
 | `npm run start:dev`         | Watch mode                                       |
 | `npm run migration:run`     | Apply TypeORM migrations                         |
 | `npm run test:e2e`          | Integration/e2e suite (needs Postgres)           |
-| `npm run migrate:mongo:dry` | Plan Mongo→PG data migration                     |
+| `npm run migrate:mongo:dry` | Plan Mongo→PG data migration (one-off cutover)   |
 
 ### Frontend (`social-network-app-frontend/`)
 
@@ -158,15 +157,21 @@ Authorization: Bearer <token>
 | `npm run build`      | Production build → `dist/`        |
 | `npm run type-check` | Type-check with `tsc -b`          |
 
+### API smoke (repo root)
+
+```bash
+chmod +x scripts/smoke-cutover.sh
+./scripts/smoke-cutover.sh http://localhost:8080
+```
+
 ## CI
 
 On push/PR to `main` or `master`, GitHub Actions runs:
 
-1. **Express (legacy):** type-check, build, tests (in-memory Mongo — no Mongo service)
-2. **Nest:** type-check, lint, build, migrate Postgres service, unit + e2e tests
-3. **Frontend:** type-check, build (`VITE_API_URL`)
+1. **Nest:** type-check, lint, build, migrate Postgres service, unit + e2e tests
+2. **Frontend:** type-check, build (`VITE_API_URL`)
 
-No MongoDB service is required in CI.
+No MongoDB service is required in CI. Archived Express is not built.
 
 ## License
 
