@@ -8,7 +8,7 @@ import {
 import { Response } from 'express';
 
 /**
- * REST error shape matching Express: `{ message, data? }` with status from
+ * REST error shape: `{ message, data? }` with status from
  * HttpException or default 500 (including plain `Error('Not authenticated!')`).
  */
 @Catch()

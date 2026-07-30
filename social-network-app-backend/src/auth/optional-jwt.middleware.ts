@@ -6,7 +6,7 @@ import { JwtPayload } from './auth.types';
 import { AuthenticatedRequest } from './authenticated-request';
 
 /**
- * Mirrors Express auth middleware: sets `isAuth` / `userId` without rejecting.
+ * Sets `isAuth` / `userId` on the request without rejecting unauthenticated calls.
  * GraphQL resolvers and REST upload check these flags themselves.
  */
 @Injectable()

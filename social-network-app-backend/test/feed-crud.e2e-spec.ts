@@ -11,7 +11,7 @@ import {
   signupAndLogin,
 } from './utils/auth-helpers';
 
-describe('Feed CRUD (Phase 4)', () => {
+describe('Feed CRUD', () => {
   let app: INestApplication<App>;
   let dataSource: DataSource;
   let token: string;

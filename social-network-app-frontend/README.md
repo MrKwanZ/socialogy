@@ -27,7 +27,7 @@ A React single-page application for a social network platform, written in **Type
 
 **This frontend cannot run as a full application on its own.**
 
-You must also run the NestJS + PostgreSQL backend (`social-network-app-backend`), which implements the frozen GraphQL + upload contract.
+You must also run the NestJS + PostgreSQL backend (`social-network-app-backend`), which provides the GraphQL API and image upload endpoint.
 
 API origin defaults to `http://localhost:8080` and is configured via `VITE_API_URL`:
 
@@ -59,7 +59,7 @@ API origin defaults to `http://localhost:8080` and is configured via `VITE_API_U
    | --------------- | ------------------------------------------------ |
    | `VITE_API_URL`  | Backend origin (default `http://localhost:8080`) |
 
-3. **Start the backend first** (Nest recommended)
+3. **Start the Nest backend first**
 
    ```bash
    cd ../social-network-app-backend

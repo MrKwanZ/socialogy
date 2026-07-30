@@ -33,7 +33,7 @@ async function bootstrap() {
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true,
-      // Auth/post inputs use manual Express-compatible validation messages.
+      // Auth/post inputs use manual validation messages for the API contract.
       // whitelist would strip undecorated GraphQL InputType fields.
       whitelist: false,
     }),

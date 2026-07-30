@@ -33,7 +33,7 @@ export class User {
   @Column({ type: 'varchar', length: 255, default: DEFAULT_USER_STATUS })
   status!: string;
 
-  /** Original MongoDB ObjectId string for Phase 6 migration traceability. */
+  /** Optional legacy id (nullable, unique when set). */
   @Index('UQ_users_legacy_mongo_id', { unique: true })
   @Column({
     name: 'legacy_mongo_id',

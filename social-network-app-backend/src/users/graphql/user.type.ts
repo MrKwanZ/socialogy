@@ -12,7 +12,7 @@ export class UserType {
   @Field()
   email!: string;
 
-  /** Optional in SDL; Express currently returns the hash via formatUser. */
+  /** Optional in the GraphQL schema; returned for compatibility with the client contract. */
   @Field({ nullable: true })
   password?: string;
 

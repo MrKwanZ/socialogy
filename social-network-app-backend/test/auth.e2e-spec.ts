@@ -16,7 +16,7 @@ import {
   signupAndLogin,
 } from './utils/auth-helpers';
 
-describe('Auth flow (Phase 3)', () => {
+describe('Auth flow', () => {
   let app: INestApplication<App>;
   let dataSource: DataSource;
 

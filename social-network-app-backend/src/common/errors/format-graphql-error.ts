@@ -9,7 +9,7 @@ function unwrapOriginalError(error: unknown): unknown {
 }
 
 /**
- * Preserve the Express/graphql-http error envelope the frontend expects:
+ * Preserve the GraphQL error envelope the frontend expects:
  * `{ message, status, data }` on each GraphQL error (not only under extensions).
  */
 export function formatGraphqlError(

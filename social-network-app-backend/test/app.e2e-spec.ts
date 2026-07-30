@@ -4,7 +4,7 @@ import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
 
-describe('Phase 1 foundation (e2e)', () => {
+describe('Foundation (e2e)', () => {
   let app: INestApplication<App>;
 
   beforeAll(async () => {

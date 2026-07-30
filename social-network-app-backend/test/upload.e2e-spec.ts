@@ -21,7 +21,7 @@ interface UploadBody {
   filePath?: string;
 }
 
-describe('Post image upload (Phase 5)', () => {
+describe('Post image upload', () => {
   let app: INestApplication<App>;
   let dataSource: DataSource;
   let token: string;
@@ -119,7 +119,7 @@ describe('Post image upload (Phase 5)', () => {
   });
 });
 
-describe('clearImage path safety (Phase 5)', () => {
+describe('clearImage path safety', () => {
   const imagesDir = path.join(process.cwd(), 'images');
   const sentinel = path.join(imagesDir, 'safe-delete-sentinel.txt');
 

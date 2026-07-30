@@ -3,7 +3,7 @@ export interface ValidationErrorItem {
 }
 
 /**
- * Domain error matching the Express backend AppError contract.
+ * Domain error for the GraphQL/REST error contract.
  * GraphQL formatError maps `code` → top-level `status` and `data`.
  */
 export class AppError extends Error {

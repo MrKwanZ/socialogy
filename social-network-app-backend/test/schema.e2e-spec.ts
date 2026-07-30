@@ -7,7 +7,7 @@ import {
   resetSchema,
 } from './utils/test-data-source';
 
-describe('Phase 2 schema repositories (e2e)', () => {
+describe('Schema repositories (e2e)', () => {
   let dataSource: DataSource;
   let users: Repository<User>;
   let posts: Repository<Post>;

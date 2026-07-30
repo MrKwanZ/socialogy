@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Post-cutover smoke: health, signup, login, createPost, posts, upload.
-# Usage: ./scripts/smoke-cutover.sh [API_ORIGIN]
+# API smoke: health, signup, login, createPost, posts, upload.
+# Usage: ./scripts/smoke-api.sh [API_ORIGIN]
 # Requires: curl, node
 set -euo pipefail
 
@@ -118,4 +118,4 @@ CODE=$(curl -sfS -o /dev/null -w "%{http_code}" "$API/$FILE_PATH")
 echo "ok"
 
 echo
-echo "Smoke cutover passed against $API"
+echo "Smoke passed against $API"

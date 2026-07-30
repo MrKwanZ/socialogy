@@ -4,7 +4,7 @@ export interface JwtPayload {
 }
 
 /**
- * Optional JWT context — mirrors Express auth middleware (`isAuth` flag).
+ * Optional JWT context (`isAuth` / `userId`).
  */
 export interface GqlContext {
   isAuth: boolean;
